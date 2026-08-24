@@ -1,6 +1,8 @@
 import fastify from "fastify";
 import "dotenv/config";
 import { Pool } from "pg";
+import { request } from "node:http";
+import argon2 from 'argon2';
 
 if (process.env.DATABASE_URL === undefined) {
     console.log("WARNING: DATABASE_URL is not defined. Stopping server.");
@@ -12,22 +14,72 @@ const pool = new Pool({
 
 
 
-pool.query("SELECT NOW()").then(result => {
+pool.query("SELECT current_database()").then(result => {
     console.log(result.rows);
 }).catch(err => {
     console.error(err);
     process.exit(1);
 });
 
-const app = fastify();
-
-
+const app = fastify({
+    ajv: {
+        customOptions: {
+            removeAdditional: false
+        }
+    }
+});
 
 app.get("/projects", () => {
     return {
         "projects": []
     };
 });
+
+
+app.post("/users", {
+    schema: {
+        body: {
+            type: 'object',
+            properties: {
+                email: {
+                    type: 'string',
+                    format: 'email'
+                },
+                password: {
+                    type: 'string',
+                    minLength: 8
+                }
+            },
+            required: ['email', 'password'],
+            additionalProperties: false
+        }
+    }
+
+}, async (request, reply) => {
+    console.log("HANDLER RAN");
+    const { email, password } = request.body as {
+        email: string;
+        password: string;
+    };
+    const passwordHash = await argon2.hash(password);
+
+    try {
+        const result = await pool.query("INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email, created_at", [email, passwordHash])
+        return reply.status(201).send({
+            message: "User created",
+            user: result.rows[0]
+        });
+    } catch (error: any) {
+        console.error(error);
+        return reply.status(500).send({
+            message: "User creation failed",
+            error: error.message
+        });
+    }
+});
+
+
+
 
 app.post("/projects", {
     schema: {
