@@ -1,6 +1,27 @@
 import fastify from "fastify";
+import "dotenv/config";
+import { Pool } from "pg";
+
+if (process.env.DATABASE_URL === undefined) {
+    console.log("WARNING: DATABASE_URL is not defined. Stopping server.");
+    process.exit(1);
+}
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+});
+
+
+
+pool.query("SELECT NOW()").then(result => {
+    console.log(result.rows);
+}).catch(err => {
+    console.error(err);
+    process.exit(1);
+});
 
 const app = fastify();
+
+
 
 app.get("/projects", () => {
     return {
