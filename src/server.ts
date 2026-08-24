@@ -56,7 +56,6 @@ app.post("/users", {
     }
 
 }, async (request, reply) => {
-    console.log("HANDLER RAN");
     const { email, password } = request.body as {
         email: string;
         password: string;
@@ -70,10 +69,14 @@ app.post("/users", {
             user: result.rows[0]
         });
     } catch (error: any) {
-        console.error(error);
+        console.error(error)
+        if (error.code === "23505") {
+            return reply.status(409).send({
+                message: "User already exists"
+            });
+        }
         return reply.status(500).send({
             message: "User creation failed",
-            error: error.message
         });
     }
 });
