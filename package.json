@@ -25,6 +25,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@fastify/jwt": "^10.2.2",
     "argon2": "^0.45.1",
     "dotenv": "^17.4.2",
     "fastify": "^5.12.1",

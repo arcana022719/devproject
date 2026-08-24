@@ -1,25 +1,32 @@
 import fastify from "fastify";
 import "dotenv/config";
 import { Pool } from "pg";
-import { request } from "node:http";
 import argon2 from 'argon2';
+import jwt from '@fastify/jwt'
+
+
+declare module "@fastify/jwt" {
+    interface FastifyJWT {
+        payload: { sub: string } // payload type is used for signing and verifying
+        user: {
+            sub: string,
+        } // user type is return type of `request.user` object
+    }
+}
 
 if (process.env.DATABASE_URL === undefined) {
     console.log("WARNING: DATABASE_URL is not defined. Stopping server.");
+    process.exit(1);
+}
+
+if (process.env.JWT_SECRET === undefined) {
+    console.log("WARNING: JWT_SECRET is not defined. Stopping server.");
     process.exit(1);
 }
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 });
 
-
-
-pool.query("SELECT current_database()").then(result => {
-    console.log(result.rows);
-}).catch(err => {
-    console.error(err);
-    process.exit(1);
-});
 
 const app = fastify({
     ajv: {
@@ -29,11 +36,22 @@ const app = fastify({
     }
 });
 
-app.get("/projects", () => {
-    return {
-        "projects": []
-    };
+app.register(jwt, {
+    secret: process.env.JWT_SECRET,
+    sign: {
+        expiresIn: '15m'
+    }
 });
+
+app.get("/projects", {},
+    async (request) => {
+        await request.jwtVerify();
+        const userId = request.user.sub;
+        const result = await pool.query("SELECT * FROM projects WHERE user_id = $1", [userId])
+        return {
+            projects: result.rows
+        };
+    });
 
 
 app.post("/users", {
@@ -80,9 +98,6 @@ app.post("/users", {
         });
     }
 });
-
-
-
 
 app.post("/projects", {
     schema: {
@@ -148,8 +163,11 @@ app.post("/login", {
                 message: "Invalid email or password"
             });
         }
+
+        const token = app.jwt.sign({ sub: user.id });
         return reply.status(200).send({
             message: "Login successful",
+            token: token
         });
     }
     catch (error: any) {
