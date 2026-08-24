@@ -110,6 +110,72 @@ app.post("/projects", {
     })
 });
 
+
+app.post("/login", {
+    schema: {
+        body: {
+            type: 'object',
+            properties: {
+                email: {
+                    type: 'string',
+                    format: 'email'
+                },
+                password: {
+                    type: 'string',
+                    minLength: 8
+                }
+            },
+            required: ['email', 'password'],
+            additionalProperties: false
+        }
+    }
+}, async (request, reply) => {
+    const { email, password } = request.body as {
+        email: string
+        password: string
+    };
+    try {
+        const result = await pool.query("SELECT id, password_hash FROM users WHERE email =$1", [email])
+        if (result.rows.length === 0) {
+            return reply.status(401).send({
+                message: "Invalid email or password"
+            });
+        }
+        const user = result.rows[0];
+        const validPassword = await argon2.verify(user.password_hash, password)
+        if (!validPassword) {
+            return reply.status(401).send({
+                message: "Invalid email or password"
+            });
+        }
+        return reply.status(200).send({
+            message: "Login successful",
+        });
+    }
+    catch (error: any) {
+        console.error(error);
+        return reply.status(500).send({
+            message: "login failed",
+        });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.listen({ port: 3000 }, (err, address) => {
     if (err) {
         console.error(err);
