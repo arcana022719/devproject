@@ -43,6 +43,22 @@ app.register(jwt, {
     }
 });
 
+app.get("/me", {},
+    async (request, reply) => {
+        await request.jwtVerify();
+        const userId = request.user.sub;
+        const result = await pool.query("SELECT email, created_at FROM users WHERE id = $1", [userId]);
+
+        if (result.rows.length === 0) {
+            return reply.status(404).send({
+                message: "User does not exist"
+            })
+        }
+        return {
+            user: result.rows[0]
+        };
+    });
+
 app.get("/projects", {},
     async (request) => {
         await request.jwtVerify();
