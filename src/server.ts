@@ -115,13 +115,20 @@ app.post("/projects", {
             additionalProperties: false
         }
     }
-}, (request, reply) => {
+}, async (request, reply) => {
+
+    await request.jwtVerify();
+
     const { name, description } = request.body as {
         name: string;
         description?: string;
-    };
+    }
+    const userId = request.user.sub;
+    const result = await pool.query("INSERT INTO projects (name, description, user_id) VALUES ($1, $2, $3) RETURNING id, user_id, name, description, created_at", [name, description, userId])
+
+
     return reply.status(201).send({
-        message: "Project created"
+        result: result.rows[0]
     })
 });
 
