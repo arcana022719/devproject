@@ -1,35 +1,26 @@
 # DevProject
 
-A full-stack project management application built as a learning foundation
-for a future cloud deployment platform.
+A project management REST API built with TypeScript, Fastify,
+PostgreSQL, and JWT authentication.
 
-## Goal
+## Features
 
-Build and understand a complete application from the ground up:
+- User authentication
+- JWT-based authorization
+- Project creation and management
+- PostgreSQL relational database
+- Request validation
+- Protected API routes
 
-Frontend → API → Database → Authentication → Testing → Cloud
+## Tech Stack
 
-## Phase 1
-
-- React
 - TypeScript
 - Node.js
+- Fastify
 - PostgreSQL
-- REST API
-- Authentication
-- Authorization
-- Testing
+- JWT
 
-## Future Phases
+## Running Locally
 
-- Docker
-- Linux
-- AWS
-- Container deployment
-- CI/CD
-- Monitoring
-- Distributed systems
-
-## Status
-
-Phase 1 — Foundations
+npm install
+npm run dev
